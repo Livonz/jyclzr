@@ -26,109 +26,104 @@ jobs:
     - name: Download SDL2 sources
       working-directory: /tmp
       run: |
-        curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.30.3/SDL2-2.30.3.tar.gz | tar xz
-        curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.2/SDL2_image-2.8.2.tar.gz | tar xz
-        curl -L https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.8.0/SDL2_mixer-2.8.0.tar.gz | tar xz
-        curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-2.22.0.tar.gz | tar xz
+        curl -sL https://github.com/libsdl-org/SDL/releases/download/release-2.30.3/SDL2-2.30.3.tar.gz | tar xz
+        curl -sL https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.2/SDL2_image-2.8.2.tar.gz | tar xz
+        curl -sL https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.8.0/SDL2_mixer-2.8.0.tar.gz | tar xz
+        curl -sL https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-2.22.0.tar.gz | tar xz
 
     - name: Build SDL2 for iOS
-      working-directory: /tmp/SDL2-2.30.3/Xcode
       run: |
-        xcodebuild -project SDL.xcodeproj \
-          -scheme "SDL-iOS" \
-          -sdk iphoneos \
-          -configuration Release \
-          SYMROOT=${{ github.workspace }}/ios-build \
-          IPHONEOS_DEPLOYMENT_TARGET=13.0 \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+        cd /tmp/SDL2-2.30.3
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DSDL_TEST=OFF
+        cmake --build . --config Release
+        cmake --install .
 
     - name: Build SDL2_image for iOS
-      working-directory: /tmp/SDL2_image-2.8.2/Xcode
       run: |
-        xcodebuild -project SDL_image.xcodeproj \
-          -scheme "SDL_image-iOS" \
-          -sdk iphoneos \
-          -configuration Release \
-          SYMROOT=${{ github.workspace }}/ios-build \
-          IPHONEOS_DEPLOYMENT_TARGET=13.0 \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          OTHER_CFLAGS="-I${{ github.workspace }}/ios-build/Release-iphoneos/SDL2.framework/Headers" \
-          OTHER_LDFLAGS="-F${{ github.workspace }}/ios-build/Release-iphoneos"
+        cd /tmp/SDL2_image-2.8.2
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DSDLIMAGE_BACKEND=OFF
+        cmake --build . --config Release
+        cmake --install .
 
     - name: Build SDL2_mixer for iOS
-      working-directory: /tmp/SDL2_mixer-2.8.0/Xcode
       run: |
-        xcodebuild -project SDL_mixer.xcodeproj \
-          -scheme "SDL_mixer-iOS" \
-          -sdk iphoneos \
-          -configuration Release \
-          SYMROOT=${{ github.workspace }}/ios-build \
-          IPHONEOS_DEPLOYMENT_TARGET=13.0 \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          OTHER_CFLAGS="-I${{ github.workspace }}/ios-build/Release-iphoneos/SDL2.framework/Headers" \
-          OTHER_LDFLAGS="-F${{ github.workspace }}/ios-build/Release-iphoneos"
+        cd /tmp/SDL2_mixer-2.8.0
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DSDL_MIXER_ENABLE_SMPEG=OFF \
+          -DSDL_MIXER_ENABLE_MODPLUG=OFF
+        cmake --build . --config Release
+        cmake --install .
 
     - name: Build SDL2_ttf for iOS
-      working-directory: /tmp/SDL2_ttf-2.22.0/Xcode
       run: |
-        xcodebuild -project SDL_ttf.xcodeproj \
-          -scheme "SDL_ttf-iOS" \
-          -sdk iphoneos \
-          -configuration Release \
-          SYMROOT=${{ github.workspace }}/ios-build \
-          IPHONEOS_DEPLOYMENT_TARGET=13.0 \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          OTHER_CFLAGS="-I${{ github.workspace }}/ios-build/Release-iphoneos/SDL2.framework/Headers" \
-          OTHER_LDFLAGS="-F${{ github.workspace }}/ios-build/Release-iphoneos"
+        cd /tmp/SDL2_ttf-2.22.0
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON
+        cmake --build . --config Release
+        cmake --install .
 
-    - name: Show build output
+    - name: Show SDL2 installation
       run: |
-        echo "=== Built frameworks ==="
-        find ${{ github.workspace }}/ios-build -name "*.framework" -type d
-        echo "=== Built libraries ==="
-        find ${{ github.workspace }}/ios-build -name "*.a" -o -name "*.dylib"
+        echo "=== Installed files ==="
+        find ${{ github.workspace }}/SDL2-ios -type f \( -name "*.a" -o -name "*.h" -o -name "*.pc" \) | head -30
+        echo "=== pkg-config ==="
+        cat ${{ github.workspace }}/SDL2-ios/lib/pkgconfig/sdl2.pc 2>/dev/null || echo "No sdl2.pc"
 
     - name: Build project
       run: |
-        IOS_BUILD_DIR=${{ github.workspace }}/ios-build
-        SDL_FRAMEWORK="${IOS_BUILD_DIR}/Release-iphoneos/SDL2.framework"
-        
-        # Find all static libraries
-        SDL2_A=$(find ${IOS_BUILD_DIR} -name "libSDL2.a" | head -1)
-        SDL2_IMAGE_A=$(find ${IOS_BUILD_DIR} -name "libSDL2_image.a" | head -1)
-        SDL2_MIXER_A=$(find ${IOS_BUILD_DIR} -name "libSDL2_mixer.a" | head -1)
-        SDL2_TTF_A=$(find ${IOS_BUILD_DIR} -name "libSDL2_ttf.a" | head -1)
-        
-        echo "SDL2: ${SDL2_A}"
-        echo "SDL2_image: ${SDL2_IMAGE_A}"
-        echo "SDL2_mixer: ${SDL2_MIXER_A}"
-        echo "SDL2_ttf: ${SDL2_TTF_A}"
-        
-        SDL2_HEADERS=$(find ${IOS_BUILD_DIR} -path "*/SDL2.framework/Headers" -type d | head -1)
-        
         cmake -B build \
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
           -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-          -DSDL2_INCLUDE_DIR="${SDL2_HEADERS}" \
-          -DSDL2_LIBRARY="${SDL2_A}" \
-          -DSDL2_IMAGE_INCLUDE_DIR="${SDL2_HEADERS}" \
-          -DSDL2_IMAGE_LIBRARY="${SDL2_IMAGE_A}" \
-          -DSDL2_MIXER_INCLUDE_DIR="${SDL2_HEADERS}" \
-          -DSDL2_MIXER_LIBRARY="${SDL2_MIXER_A}" \
-          -DSDL2_TTF_INCLUDE_DIR="${SDL2_HEADERS}" \
-          -DSDL2_TTF_LIBRARY="${SDL2_TTF_A}"
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
         
         cmake --build build --config Release
 
@@ -136,28 +131,21 @@ jobs:
       run: |
         mkdir -p Payload/jyengine.app
         
-        # Find and copy the built binary
-        BINARY=$(find build -name "jyengine" -type f ! -name "*.dir" | head -1)
-        if [ -n "$BINARY" ]; then
-          cp "$BINARY" Payload/jyengine.app/
-        fi
+        BINARY=$(find build -name "jyengine" -type f ! -name "*.dir" 2>/dev/null | head -1)
+        [ -n "$BINARY" ] && cp "$BINARY" Payload/jyengine.app/
         
-        # Copy Info.plist
-        cp ios/Info.plist Payload/jyengine.app/
+        cp ios/Info.plist Payload/jyengine.app/ 2>/dev/null || true
         
-        # Copy game resources
         for dir in data script pic sound; do
           [ -d "$dir" ] && cp -r "$dir" Payload/jyengine.app/
         done
         [ -f config.lua ] && cp config.lua Payload/jyengine.app/
         [ -f hzmb.dat ] && cp hzmb.dat Payload/jyengine.app/
         
-        # Copy fonts
         mkdir -p Payload/jyengine.app/fonts
         cp font/*.ttf Payload/jyengine.app/fonts/ 2>/dev/null || true
         cp font/*.ttc Payload/jyengine.app/fonts/ 2>/dev/null || true
         
-        # Create IPA
         zip -r jyengine.ipa Payload/
 
     - name: Upload IPA artifact

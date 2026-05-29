@@ -58,64 +58,25 @@ target_include_directories(jyengine PRIVATE
     ${LUA_DIR}
 )
 
-# SDL2 - manual specification
-if(DEFINED SDL2_INCLUDE_DIR AND DEFINED SDL2_LIBRARY)
-    target_include_directories(jyengine PRIVATE
-        ${SDL2_INCLUDE_DIR}
-        ${SDL2_IMAGE_INCLUDE_DIR}
-        ${SDL2_MIXER_INCLUDE_DIR}
-        ${SDL2_TTF_INCLUDE_DIR}
-    )
-    
-    # Create imported targets for static libraries
-    add_library(SDL2::SDL2 STATIC IMPORTED)
-    set_target_properties(SDL2::SDL2 PROPERTIES
-        IMPORTED_LOCATION "${SDL2_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_INCLUDE_DIR}"
-    )
-    
-    add_library(SDL2::SDL2_image STATIC IMPORTED)
-    set_target_properties(SDL2::SDL2_image PROPERTIES
-        IMPORTED_LOCATION "${SDL2_IMAGE_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_IMAGE_INCLUDE_DIR}"
-    )
-    
-    add_library(SDL2::SDL2_mixer STATIC IMPORTED)
-    set_target_properties(SDL2::SDL2_mixer PROPERTIES
-        IMPORTED_LOCATION "${SDL2_MIXER_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_MIXER_INCLUDE_DIR}"
-    )
-    
-    add_library(SDL2::SDL2_ttf STATIC IMPORTED)
-    set_target_properties(SDL2::SDL2_ttf PROPERTIES
-        IMPORTED_LOCATION "${SDL2_TTF_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_TTF_INCLUDE_DIR}"
-    )
-    
-    target_link_libraries(jyengine PRIVATE
-        SDL2::SDL2
-        SDL2::SDL2_image
-        SDL2::SDL2_mixer
-        SDL2::SDL2_ttf
-    )
-else()
-    find_package(SDL2 REQUIRED)
-    find_package(SDL2_image REQUIRED)
-    find_package(SDL2_mixer REQUIRED)
-    find_package(SDL2_ttf REQUIRED)
-    target_include_directories(jyengine PRIVATE
-        ${SDL2_INCLUDE_DIRS}
-        ${SDL2_IMAGE_INCLUDE_DIRS}
-        ${SDL2_MIXER_INCLUDE_DIRS}
-        ${SDL2_TTF_INCLUDE_DIRS}
-    )
-    target_link_libraries(jyengine PRIVATE
-        ${SDL2_LIBRARIES}
-        ${SDL2_IMAGE_LIBRARIES}
-        ${SDL2_MIXER_LIBRARIES}
-        ${SDL2_TTF_LIBRARIES}
-    )
-endif()
+# Find SDL2 via CMAKE_PREFIX_PATH
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+find_package(SDL2_ttf REQUIRED)
+
+target_include_directories(jyengine PRIVATE
+    ${SDL2_INCLUDE_DIRS}
+    ${SDL2_IMAGE_INCLUDE_DIRS}
+    ${SDL2_MIXER_INCLUDE_DIRS}
+    ${SDL2_TTF_INCLUDE_DIRS}
+)
+
+target_link_libraries(jyengine PRIVATE
+    ${SDL2_LIBRARIES}
+    ${SDL2_IMAGE_LIBRARIES}
+    ${SDL2_MIXER_LIBRARIES}
+    ${SDL2_TTF_LIBRARIES}
+)
 
 if(IOS)
     target_link_libraries(jyengine PRIVATE
@@ -123,10 +84,6 @@ if(IOS)
         "-framework Foundation"
         "-framework CoreGraphics"
         "-framework QuartzCore"
-    )
-    set_target_properties(jyengine PROPERTIES
-        INSTALL_RPATH "@executable_path/Frameworks"
-        BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()
 
