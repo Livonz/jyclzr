@@ -31,124 +31,115 @@ jobs:
         curl -sL https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.8.0/SDL2_mixer-2.8.0.tar.gz | tar xz
         curl -sL https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-2.22.0.tar.gz | tar xz
 
-    - name: Build SDL2 for iOS
+    - name: Build all SDL2 for iOS
       run: |
+        PREFIX=${{ github.workspace }}/SDL2-ios
+        IOS_FLAGS="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY=- -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO"
+        
+        # Build SDL2
+        echo "=== Building SDL2 ==="
         cd /tmp/SDL2-2.30.3
         mkdir build && cd build
-        cmake .. \
-          -DCMAKE_SYSTEM_NAME=iOS \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-          -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-          -DSDL_SHARED=OFF \
-          -DSDL_STATIC=ON \
-          -DSDL_TEST=OFF
+        cmake .. ${IOS_FLAGS} -DCMAKE_INSTALL_PREFIX=${PREFIX} -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST=OFF
         cmake --build . --config Release
         cmake --install .
-
-    - name: Build SDL2_image for iOS
-      run: |
+        
+        # Show what we installed
+        echo "=== SDL2 installed ==="
+        ls -la ${PREFIX}/lib/ 2>/dev/null || true
+        ls -la ${PREFIX}/include/ 2>/dev/null || true
+        find ${PREFIX} -name "sdl2-config.cmake" -o -name "SDL2Config.cmake" -o -name "FindSDL2.cmake" 2>/dev/null || true
+        cat ${PREFIX}/lib/cmake/SDL2/sdl2-config.cmake 2>/dev/null || echo "No sdl2-config.cmake"
+        
+        # Build SDL2_image - manually specify SDL2 location
+        echo "=== Building SDL2_image ==="
         cd /tmp/SDL2_image-2.8.2
         mkdir build && cd build
-        cmake .. \
-          -DCMAKE_SYSTEM_NAME=iOS \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-          -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+        cmake .. ${IOS_FLAGS} \
+          -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+          -DSDL2_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_LIBRARY=${PREFIX}/lib/libSDL2.a \
+          -DSDL2_MAIN_LIBRARY=${PREFIX}/lib/libSDL2main.a \
+          -DSDL2_DIR=${PREFIX}/lib/cmake/SDL2 \
+          -DCMAKE_DISABLE_FIND_PACKAGE_SDL2=OFF \
           -DSDL_SHARED=OFF \
-          -DSDL_STATIC=ON \
-          -DSDLIMAGE_BACKEND=OFF
+          -DSDL_STATIC=ON
         cmake --build . --config Release
         cmake --install .
-
-    - name: Build SDL2_mixer for iOS
-      run: |
+        
+        # Build SDL2_mixer
+        echo "=== Building SDL2_mixer ==="
         cd /tmp/SDL2_mixer-2.8.0
         mkdir build && cd build
-        cmake .. \
-          -DCMAKE_SYSTEM_NAME=iOS \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-          -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+        cmake .. ${IOS_FLAGS} \
+          -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+          -DSDL2_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_LIBRARY=${PREFIX}/lib/libSDL2.a \
+          -DSDL2_MAIN_LIBRARY=${PREFIX}/lib/libSDL2main.a \
+          -DSDL2_DIR=${PREFIX}/lib/cmake/SDL2 \
           -DSDL_SHARED=OFF \
           -DSDL_STATIC=ON \
           -DSDL_MIXER_ENABLE_SMPEG=OFF \
           -DSDL_MIXER_ENABLE_MODPLUG=OFF
         cmake --build . --config Release
         cmake --install .
-
-    - name: Build SDL2_ttf for iOS
-      run: |
+        
+        # Build SDL2_ttf
+        echo "=== Building SDL2_ttf ==="
         cd /tmp/SDL2_ttf-2.22.0
         mkdir build && cd build
-        cmake .. \
-          -DCMAKE_SYSTEM_NAME=iOS \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-          -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+        cmake .. ${IOS_FLAGS} \
+          -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+          -DSDL2_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_LIBRARY=${PREFIX}/lib/libSDL2.a \
+          -DSDL2_MAIN_LIBRARY=${PREFIX}/lib/libSDL2main.a \
+          -DSDL2_DIR=${PREFIX}/lib/cmake/SDL2 \
           -DSDL_SHARED=OFF \
           -DSDL_STATIC=ON
         cmake --build . --config Release
         cmake --install .
-
-    - name: Show SDL2 installation
-      run: |
-        echo "=== Installed files ==="
-        find ${{ github.workspace }}/SDL2-ios -type f \( -name "*.a" -o -name "*.h" -o -name "*.pc" \) | head -30
-        echo "=== pkg-config ==="
-        cat ${{ github.workspace }}/SDL2-ios/lib/pkgconfig/sdl2.pc 2>/dev/null || echo "No sdl2.pc"
+        
+        echo "=== Final installation ==="
+        find ${PREFIX} -name "*.a" -o -name "*.h" 2>/dev/null
 
     - name: Build project
       run: |
+        PREFIX=${{ github.workspace }}/SDL2-ios
         cmake -B build \
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
           -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/SDL2-ios \
-          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/SDL2-ios \
+          -DCMAKE_INSTALL_PREFIX=${PREFIX} \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
-        
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL2_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_LIBRARY=${PREFIX}/lib/libSDL2.a \
+          -DSDL2_IMAGE_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_IMAGE_LIBRARY=${PREFIX}/lib/libSDL2_image.a \
+          -DSDL2_MIXER_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_MIXER_LIBRARY=${PREFIX}/lib/libSDL2_mixer.a \
+          -DSDL2_TTF_INCLUDE_DIR=${PREFIX}/include/SDL2 \
+          -DSDL2_TTF_LIBRARY=${PREFIX}/lib/libSDL2_ttf.a
         cmake --build build --config Release
 
     - name: Package IPA
       run: |
         mkdir -p Payload/jyengine.app
-        
         BINARY=$(find build -name "jyengine" -type f ! -name "*.dir" 2>/dev/null | head -1)
         [ -n "$BINARY" ] && cp "$BINARY" Payload/jyengine.app/
-        
         cp ios/Info.plist Payload/jyengine.app/ 2>/dev/null || true
-        
         for dir in data script pic sound; do
           [ -d "$dir" ] && cp -r "$dir" Payload/jyengine.app/
         done
         [ -f config.lua ] && cp config.lua Payload/jyengine.app/
         [ -f hzmb.dat ] && cp hzmb.dat Payload/jyengine.app/
-        
         mkdir -p Payload/jyengine.app/fonts
         cp font/*.ttf Payload/jyengine.app/fonts/ 2>/dev/null || true
         cp font/*.ttc Payload/jyengine.app/fonts/ 2>/dev/null || true
-        
         zip -r jyengine.ipa Payload/
 
-    - name: Upload IPA artifact
+    - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
         name: jyengine-ipa

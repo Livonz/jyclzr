@@ -15,13 +15,11 @@ if(IOS)
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED NO)
 endif()
 
-# Lua
 set(LUA_DIR ${CMAKE_SOURCE_DIR}/third_party/lua)
 file(GLOB LUA_SOURCES ${LUA_DIR}/*.c)
 list(FILTER LUA_SOURCES EXCLUDE REGEX "luac\\.c$")
 list(FILTER LUA_SOURCES EXCLUDE REGEX "lua\\.c$")
 
-# Engine sources
 set(ENGINE_SOURCES
     src/jymain.c
     src/sdlfun.c
@@ -58,25 +56,43 @@ target_include_directories(jyengine PRIVATE
     ${LUA_DIR}
 )
 
-# Find SDL2 via CMAKE_PREFIX_PATH
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
-find_package(SDL2_mixer REQUIRED)
-find_package(SDL2_ttf REQUIRED)
-
-target_include_directories(jyengine PRIVATE
-    ${SDL2_INCLUDE_DIRS}
-    ${SDL2_IMAGE_INCLUDE_DIRS}
-    ${SDL2_MIXER_INCLUDE_DIRS}
-    ${SDL2_TTF_INCLUDE_DIRS}
-)
-
-target_link_libraries(jyengine PRIVATE
-    ${SDL2_LIBRARIES}
-    ${SDL2_IMAGE_LIBRARIES}
-    ${SDL2_MIXER_LIBRARIES}
-    ${SDL2_TTF_LIBRARIES}
-)
+# SDL2 - manually specified paths
+if(DEFINED SDL2_INCLUDE_DIR AND DEFINED SDL2_LIBRARY)
+    message(STATUS "Using manual SDL2 paths")
+    message(STATUS "SDL2_INCLUDE_DIR: ${SDL2_INCLUDE_DIR}")
+    message(STATUS "SDL2_LIBRARY: ${SDL2_LIBRARY}")
+    
+    target_include_directories(jyengine PRIVATE
+        ${SDL2_INCLUDE_DIR}
+        ${SDL2_IMAGE_INCLUDE_DIR}
+        ${SDL2_MIXER_INCLUDE_DIR}
+        ${SDL2_TTF_INCLUDE_DIR}
+    )
+    
+    target_link_libraries(jyengine PRIVATE
+        ${SDL2_IMAGE_LIBRARY}
+        ${SDL2_MIXER_LIBRARY}
+        ${SDL2_TTF_LIBRARY}
+        ${SDL2_LIBRARY}
+    )
+else()
+    find_package(SDL2 REQUIRED)
+    find_package(SDL2_image REQUIRED)
+    find_package(SDL2_mixer REQUIRED)
+    find_package(SDL2_ttf REQUIRED)
+    target_include_directories(jyengine PRIVATE
+        ${SDL2_INCLUDE_DIRS}
+        ${SDL2_IMAGE_INCLUDE_DIRS}
+        ${SDL2_MIXER_INCLUDE_DIRS}
+        ${SDL2_TTF_INCLUDE_DIRS}
+    )
+    target_link_libraries(jyengine PRIVATE
+        ${SDL2_LIBRARIES}
+        ${SDL2_IMAGE_LIBRARIES}
+        ${SDL2_MIXER_LIBRARIES}
+        ${SDL2_TTF_LIBRARIES}
+    )
+endif()
 
 if(IOS)
     target_link_libraries(jyengine PRIVATE
