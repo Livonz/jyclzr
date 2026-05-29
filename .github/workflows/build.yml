@@ -1,0 +1,111 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.2'
+
+    - name: Install dependencies
+      run: |
+        brew install cmake sdl2 sdl2_image sdl2_mixer sdl2_ttf lua
+
+    - name: Download Lua source
+      run: |
+        mkdir -p third_party/lua
+        cd third_party/lua
+        curl -L https://www.lua.org/ftp/lua-5.1.5.tar.gz -o lua.tar.gz
+        tar xzf lua.tar.gz --strip-components=1
+        rm lua.tar.gz
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL2_DIR=$(brew --prefix sdl2)/lib/cmake/SDL2 \
+          -DSDL2_IMAGE_DIR=$(brew --prefix sdl2_image)/lib/cmake/SDL2_image \
+          -DSDL2_MIXER_DIR=$(brew --prefix sdl2_mixer)/lib/cmake/SDL2_mixer \
+          -DSDL2_TTF_DIR=$(brew --prefix sdl2_ttf)/lib/cmake/SDL2_ttf
+
+    - name: Build
+      run: |
+        cmake --build build --config Release
+
+    - name: Prepare IPA structure
+      run: |
+        # Create IPA directory structure
+        mkdir -p Payload/jyengine.app
+        
+        # Copy built app
+        cp -r build/ios/jyengine.app/* Payload/jyengine.app/
+        
+        # Copy game resources
+        cp -r data Payload/jyengine.app/
+        cp -r script Payload/jyengine.app/
+        cp -r pic Payload/jyengine.app/
+        cp -r sound Payload/jyengine.app/
+        cp config.lua Payload/jyengine.app/
+        cp hzmb.dat Payload/jyengine.app/
+        
+        # Copy fonts
+        mkdir -p Payload/jyengine.app/fonts
+        cp -f font/*.ttf Payload/jyengine.app/fonts/ 2>/dev/null || true
+        cp -f font/*.ttc Payload/jyengine.app/fonts/ 2>/dev/null || true
+
+    - name: Create IPA
+      run: |
+        cd Payload
+        zip -r ../jyengine.tipa jyengine.app
+        cd ..
+        mv jyengine.tipa jyengine.ipa
+
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: jyengine-ipa
+        path: jyengine.ipa
+        retention-days: 30
+
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: jyengine.ipa
+        tag_name: v${{ github.run_number }}
+        name: Build ${{ github.run_number }}
+        body: |
+          iOS build of JY Engine (苍龙天赋完全版)
+          
+          **Installation:**
+          1. Download jyengine.ipa
+          2. Install via TrollStore (巨魔)
+          3. Place game files in the app's Documents/game directory
+          
+          **Game files needed:**
+          - data/ folder
+          - script/ folder
+          - pic/ folder
+          - sound/ folder
+          - config.lua
+          - hzmb.dat
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
