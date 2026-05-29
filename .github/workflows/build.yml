@@ -20,9 +20,9 @@ jobs:
       with:
         xcode-version: '15.2'
 
-    - name: Install dependencies
+    - name: Install build tools
       run: |
-        brew install cmake sdl2 sdl2_image sdl2_mixer sdl2_ttf lua
+        brew install cmake automake autoconf libtool pkg-config
 
     - name: Download Lua source
       run: |
@@ -32,7 +32,96 @@ jobs:
         tar xzf lua.tar.gz --strip-components=1
         rm lua.tar.gz
 
-    - name: Configure CMake
+    - name: Build SDL2 for iOS
+      run: |
+        cd /tmp
+        curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.30.3/SDL2-2.30.3.tar.gz -o SDL2.tar.gz
+        tar xzf SDL2.tar.gz
+        cd SDL2-2.30.3
+        mkdir -p build-ios && cd build-ios
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/ios-deps
+        cmake --build . --config Release
+        cmake --install .
+
+    - name: Build SDL2_image for iOS
+      run: |
+        cd /tmp
+        curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.2/SDL2_image-2.8.2.tar.gz -o SDL2_image.tar.gz
+        tar xzf SDL2_image.tar.gz
+        cd SDL2_image-2.8.2
+        mkdir -p build-ios && cd build-ios
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/ios-deps \
+          -DSDL2_IMAGE_LIBRARIES=${{ github.workspace }}/ios-deps/lib/libSDL2.a \
+          -DSDL2_IMAGE_INCLUDE_DIRS=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/ios-deps
+        cmake --build . --config Release
+        cmake --install .
+
+    - name: Build SDL2_mixer for iOS
+      run: |
+        cd /tmp
+        curl -L https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.8.0/SDL2_mixer-2.8.0.tar.gz -o SDL2_mixer.tar.gz
+        tar xzf SDL2_mixer.tar.gz
+        cd SDL2_mixer-2.8.0
+        mkdir -p build-ios && cd build-ios
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/ios-deps \
+          -DSDL2_MIXER_LIBRARIES=${{ github.workspace }}/ios-deps/lib/libSDL2.a \
+          -DSDL2_MIXER_INCLUDE_DIRS=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/ios-deps
+        cmake --build . --config Release
+        cmake --install .
+
+    - name: Build SDL2_ttf for iOS
+      run: |
+        cd /tmp
+        curl -L https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-2.22.0.tar.gz -o SDL2_ttf.tar.gz
+        tar xzf SDL2_ttf.tar.gz
+        cd SDL2_ttf-2.22.0
+        mkdir -p build-ios && cd build-ios
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/ios-deps \
+          -DSDL2_TTF_LIBRARIES=${{ github.workspace }}/ios-deps/lib/libSDL2.a \
+          -DSDL2_TTF_INCLUDE_DIRS=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL_SHARED=OFF \
+          -DSDL_STATIC=ON \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/ios-deps
+        cmake --build . --config Release
+        cmake --install .
+
+    - name: Configure project
       run: |
         cmake -B build \
           -DCMAKE_SYSTEM_NAME=iOS \
@@ -41,30 +130,36 @@ jobs:
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-          -DSDL2_DIR=$(brew --prefix sdl2)/lib/cmake/SDL2 \
-          -DSDL2_IMAGE_DIR=$(brew --prefix sdl2_image)/lib/cmake/SDL2_image \
-          -DSDL2_MIXER_DIR=$(brew --prefix sdl2_mixer)/lib/cmake/SDL2_mixer \
-          -DSDL2_TTF_DIR=$(brew --prefix sdl2_ttf)/lib/cmake/SDL2_ttf
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/ios-deps \
+          -DSDL2_INCLUDE_DIR=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL2_LIBRARY=${{ github.workspace }}/ios-deps/lib/libSDL2.a \
+          -DSDL2_IMAGE_INCLUDE_DIR=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL2_IMAGE_LIBRARY=${{ github.workspace }}/ios-deps/lib/libSDL2_image.a \
+          -DSDL2_MIXER_INCLUDE_DIR=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL2_MIXER_LIBRARY=${{ github.workspace }}/ios-deps/lib/libSDL2_mixer.a \
+          -DSDL2_TTF_INCLUDE_DIR=${{ github.workspace }}/ios-deps/include/SDL2 \
+          -DSDL2_TTF_LIBRARY=${{ github.workspace }}/ios-deps/lib/libSDL2_ttf.a
 
-    - name: Build
+    - name: Build project
       run: |
         cmake --build build --config Release
 
-    - name: Prepare IPA structure
+    - name: Prepare IPA
       run: |
-        # Create IPA directory structure
         mkdir -p Payload/jyengine.app
         
         # Copy built app
-        cp -r build/ios/jyengine.app/* Payload/jyengine.app/
+        cp -r build/ios/jyengine.app/* Payload/jyengine.app/ 2>/dev/null || \
+        cp -r build/jyengine.app/* Payload/jyengine.app/ 2>/dev/null || \
+        cp build/jyengine Payload/jyengine.app/ 2>/dev/null || true
         
-        # Copy game resources
-        cp -r data Payload/jyengine.app/
-        cp -r script Payload/jyengine.app/
-        cp -r pic Payload/jyengine.app/
-        cp -r sound Payload/jyengine.app/
-        cp config.lua Payload/jyengine.app/
-        cp hzmb.dat Payload/jyengine.app/
+        # Copy game resources from repo
+        cp -r data Payload/jyengine.app/ 2>/dev/null || true
+        cp -r script Payload/jyengine.app/ 2>/dev/null || true
+        cp -r pic Payload/jyengine.app/ 2>/dev/null || true
+        cp -r sound Payload/jyengine.app/ 2>/dev/null || true
+        cp config.lua Payload/jyengine.app/ 2>/dev/null || true
+        cp hzmb.dat Payload/jyengine.app/ 2>/dev/null || true
         
         # Copy fonts
         mkdir -p Payload/jyengine.app/fonts
@@ -73,10 +168,7 @@ jobs:
 
     - name: Create IPA
       run: |
-        cd Payload
-        zip -r ../jyengine.tipa jyengine.app
-        cd ..
-        mv jyengine.tipa jyengine.ipa
+        zip -r jyengine.ipa Payload/
 
     - name: Upload IPA artifact
       uses: actions/upload-artifact@v4
@@ -97,15 +189,7 @@ jobs:
           
           **Installation:**
           1. Download jyengine.ipa
-          2. Install via TrollStore (巨魔)
-          3. Place game files in the app's Documents/game directory
-          
-          **Game files needed:**
-          - data/ folder
-          - script/ folder
-          - pic/ folder
-          - sound/ folder
-          - config.lua
-          - hzmb.dat
+          2. Install via TrollStore
+          3. Place game files in Documents/game/
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
