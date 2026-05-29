@@ -3,7 +3,6 @@ project(jyengine VERSION 1.0.0 LANGUAGES C OBJC)
 
 set(CMAKE_C_STANDARD 11)
 
-# iOS settings
 if(IOS)
     set(CMAKE_SYSTEM_NAME iOS)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0")
@@ -16,13 +15,13 @@ if(IOS)
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED NO)
 endif()
 
-# Lua source (embedded)
+# Lua
 set(LUA_DIR ${CMAKE_SOURCE_DIR}/third_party/lua)
 file(GLOB LUA_SOURCES ${LUA_DIR}/*.c)
 list(FILTER LUA_SOURCES EXCLUDE REGEX "luac\\.c$")
 list(FILTER LUA_SOURCES EXCLUDE REGEX "lua\\.c$")
 
-# Engine source files
+# Engine sources
 set(ENGINE_SOURCES
     src/jymain.c
     src/sdlfun.c
@@ -32,40 +31,13 @@ set(ENGINE_SOURCES
     src/charset.c
 )
 
-# iOS app source files
 if(IOS)
     list(APPEND ENGINE_SOURCES
         ios/jyengine/main.m
         ios/jyengine/AppDelegate.m
         ios/jyengine/JYViewController.m
     )
-endif()
-
-# Find SDL2 - try multiple methods
-if(DEFINED SDL2_LIBRARY AND DEFINED SDL2_INCLUDE_DIR)
-    # Manual specification (used in CI)
-    set(SDL2_LIBRARIES ${SDL2_LIBRARY})
-    set(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
-    set(SDL2_IMAGE_LIBRARIES ${SDL2_IMAGE_LIBRARY})
-    set(SDL2_IMAGE_INCLUDE_DIRS ${SDL2_IMAGE_INCLUDE_DIR})
-    set(SDL2_MIXER_LIBRARIES ${SDL2_MIXER_LIBRARY})
-    set(SDL2_MIXER_INCLUDE_DIRS ${SDL2_MIXER_INCLUDE_DIR})
-    set(SDL2_TTF_LIBRARIES ${SDL2_TTF_LIBRARY})
-    set(SDL2_TTF_INCLUDE_DIRS ${SDL2_TTF_INCLUDE_DIR})
-else()
-    # Try find_package
-    find_package(SDL2 QUIET)
-    find_package(SDL2_image QUIET)
-    find_package(SDL2_mixer QUIET)
-    find_package(SDL2_ttf QUIET)
-endif()
-
-# Create executable
-if(IOS)
-    add_executable(jyengine MACOSX_BUNDLE
-        ${ENGINE_SOURCES}
-        ${LUA_SOURCES}
-    )
+    add_executable(jyengine MACOSX_BUNDLE ${ENGINE_SOURCES} ${LUA_SOURCES})
     set_target_properties(jyengine PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.jyengine.ios"
@@ -78,31 +50,73 @@ if(IOS)
         XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY NO
     )
 else()
-    add_executable(jyengine
-        ${ENGINE_SOURCES}
-        ${LUA_SOURCES}
-    )
+    add_executable(jyengine ${ENGINE_SOURCES} ${LUA_SOURCES})
 endif()
 
-# Include directories
 target_include_directories(jyengine PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${LUA_DIR}
-    ${SDL2_INCLUDE_DIRS}
-    ${SDL2_IMAGE_INCLUDE_DIRS}
-    ${SDL2_MIXER_INCLUDE_DIRS}
-    ${SDL2_TTF_INCLUDE_DIRS}
 )
 
-# Link libraries
-target_link_libraries(jyengine PRIVATE
-    ${SDL2_LIBRARIES}
-    ${SDL2_IMAGE_LIBRARIES}
-    ${SDL2_MIXER_LIBRARIES}
-    ${SDL2_TTF_LIBRARIES}
-)
+# SDL2 - manual specification
+if(DEFINED SDL2_INCLUDE_DIR AND DEFINED SDL2_LIBRARY)
+    target_include_directories(jyengine PRIVATE
+        ${SDL2_INCLUDE_DIR}
+        ${SDL2_IMAGE_INCLUDE_DIR}
+        ${SDL2_MIXER_INCLUDE_DIR}
+        ${SDL2_TTF_INCLUDE_DIR}
+    )
+    
+    # Create imported targets for static libraries
+    add_library(SDL2::SDL2 STATIC IMPORTED)
+    set_target_properties(SDL2::SDL2 PROPERTIES
+        IMPORTED_LOCATION "${SDL2_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_INCLUDE_DIR}"
+    )
+    
+    add_library(SDL2::SDL2_image STATIC IMPORTED)
+    set_target_properties(SDL2::SDL2_image PROPERTIES
+        IMPORTED_LOCATION "${SDL2_IMAGE_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_IMAGE_INCLUDE_DIR}"
+    )
+    
+    add_library(SDL2::SDL2_mixer STATIC IMPORTED)
+    set_target_properties(SDL2::SDL2_mixer PROPERTIES
+        IMPORTED_LOCATION "${SDL2_MIXER_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_MIXER_INCLUDE_DIR}"
+    )
+    
+    add_library(SDL2::SDL2_ttf STATIC IMPORTED)
+    set_target_properties(SDL2::SDL2_ttf PROPERTIES
+        IMPORTED_LOCATION "${SDL2_TTF_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${SDL2_TTF_INCLUDE_DIR}"
+    )
+    
+    target_link_libraries(jyengine PRIVATE
+        SDL2::SDL2
+        SDL2::SDL2_image
+        SDL2::SDL2_mixer
+        SDL2::SDL2_ttf
+    )
+else()
+    find_package(SDL2 REQUIRED)
+    find_package(SDL2_image REQUIRED)
+    find_package(SDL2_mixer REQUIRED)
+    find_package(SDL2_ttf REQUIRED)
+    target_include_directories(jyengine PRIVATE
+        ${SDL2_INCLUDE_DIRS}
+        ${SDL2_IMAGE_INCLUDE_DIRS}
+        ${SDL2_MIXER_INCLUDE_DIRS}
+        ${SDL2_TTF_INCLUDE_DIRS}
+    )
+    target_link_libraries(jyengine PRIVATE
+        ${SDL2_LIBRARIES}
+        ${SDL2_IMAGE_LIBRARIES}
+        ${SDL2_MIXER_LIBRARIES}
+        ${SDL2_TTF_LIBRARIES}
+    )
+endif()
 
-# iOS frameworks
 if(IOS)
     target_link_libraries(jyengine PRIVATE
         "-framework UIKit"
@@ -123,8 +137,3 @@ target_compile_definitions(jyengine PRIVATE
 if(NOT MSVC)
     target_compile_options(jyengine PRIVATE -Wall -Wno-unused-variable -Wno-unused-function)
 endif()
-
-install(TARGETS jyengine
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION bin
-)
